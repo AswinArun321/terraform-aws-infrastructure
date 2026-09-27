@@ -4,7 +4,7 @@ Infrastructure as Code project for provisioning a complete AWS application envir
 
 The project automates the creation of a production-style AWS infrastructure consisting of networking, compute, load balancing, security, and database resources.
 
-## 🚀 Project Overview
+## Project Overview
 
 This project demonstrates how Terraform can be used to provision and manage AWS infrastructure instead of configuring resources manually through the AWS Management Console.
 
@@ -21,7 +21,7 @@ The infrastructure includes:
 
 The infrastructure can be reused for different environments such as **development and staging** by changing configuration variables.
 
-## 🏗️ Architecture
+## Architecture
 
 ```text
                     Internet
@@ -54,7 +54,7 @@ The infrastructure can be reused for different environments such as **developmen
         +-----------------------+
 ```
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 | Technology | Purpose |
 |---|---|
@@ -68,7 +68,7 @@ The infrastructure can be reused for different environments such as **developmen
 | Terraform Modules | Reusable infrastructure components |
 | Terraform Remote State | Centralized state management |
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 terraform-aws-infrastructure/
@@ -114,7 +114,7 @@ terraform-aws-infrastructure/
 
 > Adjust the structure above to match the actual files in your repository.
 
-## ⚙️ Infrastructure Components
+## Infrastructure Components
 
 ### 1. VPC
 
@@ -174,7 +174,7 @@ This makes the configuration easier to:
 - Scale
 - Deploy across environments
 
-## 🌍 Environment Management
+## Environment Management
 
 The Terraform configuration is designed so that the same infrastructure configuration can be used for different environments.
 
@@ -191,7 +191,7 @@ For example:
 
 Environment-specific values can be supplied through variables rather than duplicating the entire infrastructure configuration.
 
-## 🔐 Remote State
+## Remote State
 
 Terraform remote state is used to maintain infrastructure state centrally.
 
@@ -199,7 +199,7 @@ This allows infrastructure changes to be tracked consistently and makes the Terr
 
 > Do not commit Terraform state files or sensitive credentials to GitHub.
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before running the project, install:
 
@@ -226,7 +226,7 @@ Configure your AWS credentials:
 aws configure
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the repository
 
@@ -274,7 +274,7 @@ terraform apply
 
 Confirm the operation when Terraform asks for approval.
 
-## 🧹 Destroy Infrastructure
+## Destroy Infrastructure
 
 When the infrastructure is no longer required:
 
@@ -284,7 +284,7 @@ terraform destroy
 
 Review the resources carefully before confirming the destruction.
 
-## 📊 Project Outcome
+## Project Outcome
 
 The project focuses on replacing manual AWS infrastructure configuration with automated Infrastructure as Code.
 
@@ -294,7 +294,7 @@ According to the project implementation:
 - Modular Terraform configuration allows the same infrastructure to be used for **development and staging** with configuration changes rather than duplicated infrastructure code.
 - AWS networking, compute, load balancing, and database infrastructure are provisioned through Terraform.
 
-## 🎯 Key Learning Outcomes
+## Key Learning Outcomes
 
 Through this project, the following concepts are demonstrated:
 
@@ -311,7 +311,7 @@ Through this project, the following concepts are demonstrated:
 - Multi-environment infrastructure
 - Automated cloud infrastructure provisioning
 
-## 🔮 Future Improvements
+## Future Improvements
 
 Possible future enhancements include:
 
@@ -325,7 +325,7 @@ Possible future enhancements include:
 - Improve secrets management using AWS Secrets Manager
 - Add infrastructure diagrams and deployment documentation
 
-## 👨‍💻 Author
+## Author
 
 **Aswin Arunkumar A**
 
@@ -335,6 +335,6 @@ Rajagiri College of Social Sciences
 - GitHub: [AswinArun321](https://github.com/AswinArun321)
 - LinkedIn: Add your LinkedIn profile here
 
-## 📄 License
+## License
 
 This project is intended for educational and portfolio purposes.
