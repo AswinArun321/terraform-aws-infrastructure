@@ -1,0 +1,50 @@
+# Terraform local and state files
+.terraform/
+.terraform.lock.hcl.bak
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Environment backend configuration with sensitive bucket/account info
+*.backend.hcl
+!*.backend.hcl.example
+
+# Environment and sensitive variables
+*.env
+*.env.*
+*.tfvars.json
+# dev.tfvars and staging.tfvars are non-secret and committed as specified in plan.md
+# Any personal or secret tfvars should be excluded:
+*.secret.tfvars
+personal.tfvars
+
+# Key files and certificates
+*.pem
+*.key
+*.cer
+*.crt
+*.pfx
+*.p12
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python cache (for demo app)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/

@@ -1,340 +1,263 @@
-# AWS Infrastructure Provisioning with Terraform
+# Multi-Tier AWS Infrastructure Provisioning with Terraform
 
-Infrastructure as Code project for provisioning a complete AWS application environment using **Terraform**.
+[![Terraform CI Quality & Security Checks](https://github.com/AswinArun321/terraform-aws-infrastructure/actions/workflows/terraform-checks.yml/badge.svg)](https://github.com/AswinArun321/terraform-aws-infrastructure/actions/workflows/terraform-checks.yml)
+[![Terraform Version](https://img.shields.io/badge/Terraform-%3E%3D%201.10.0-623CE4?logo=terraform)](https://www.terraform.io/)
+[![AWS Provider](https://img.shields.io/badge/AWS%20Provider-~%3E%205.80-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The project automates the creation of a production-style AWS infrastructure consisting of networking, compute, load balancing, security, and database resources.
+Production-style Infrastructure as Code (IaC) repository that automates the provisioning of an isolated, multi-tier AWS application environment using **Terraform**.
 
-## Project Overview
+The infrastructure orchestrates networking, serverless container compute (ECS Fargate), layer-7 load balancing (ALB), and a private managed relational database (RDS PostgreSQL). A single root configuration provisions completely isolated **development (`dev`)** and **staging (`staging`)** environments using per-environment variable files and remote S3 backend state with S3-native locking.
 
-This project demonstrates how Terraform can be used to provision and manage AWS infrastructure instead of configuring resources manually through the AWS Management Console.
+---
 
-The infrastructure includes:
-
-- Amazon VPC
-- Public and private subnets
-- Security groups
-- ECS Fargate cluster
-- Application Load Balancer
-- Amazon RDS PostgreSQL
-- Terraform modules
-- Remote Terraform state
-
-The infrastructure can be reused for different environments such as **development and staging** by changing configuration variables.
-
-## Architecture
+## 1. Architecture Overview
 
 ```text
-                    Internet
-                       |
-                       v
-              +------------------+
-              |       ALB        |
-              | Application      |
-              | Load Balancer    |
-              +--------+---------+
-                       |
-                       v
-              +------------------+
-              |   ECS Fargate    |
-              |     Cluster      |
-              +--------+---------+
-                       |
-                       v
-              +------------------+
-              |  RDS PostgreSQL  |
-              +------------------+
-
-              AWS VPC
-        +-----------------------+
-        |                       |
-        | Public Subnets        |
-        | Private Subnets       |
-        | Security Groups       |
-        |                       |
-        +-----------------------+
+                                  Internet
+                                     │
+                                     │ HTTP (Port 80)
+                                     ▼
+                       ┌───────────────────────────┐
+                       │ Application Load Balancer │
+                       │    (Public Subnet AZ-a,   │
+                       │     Public Subnet AZ-b)   │
+                       └─────────────┬─────────────┘
+                                     │
+                                     │ HTTP (App Port 8000)
+                                     ▼
+                 ┌───────────────────────────────────────┐
+                 │       AWS ECS Fargate Cluster         │
+                 │ ┌───────────────────┐ ┌─────────────┐ │
+                 │ │ Task (AZ-a)       │ │ Task (AZ-b) │ │
+                 │ │ Private Subnet    │ │ Private Sub │ │
+                 │ └─────────┬─────────┘ └──────┬──────┘ │
+                 └───────────┼──────────────────┼────────┘
+                             │                  │
+         Outbound HTTPS 443  │                  │  PostgreSQL TCP 5432
+         (ECR, CW, Secrets)  │                  │  (SSL Required)
+                 ▼           │                  ▼
+         ┌───────────────┐   │         ┌───────────────────┐
+         │  NAT Gateway  │   │         │  RDS PostgreSQL   │
+         │(Public AZ-a)  │◄──┘         │(Private DB Subnet)│
+         └───────┬───────┘             └───────────────────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │ Internet GW   │
+         └───────────────┘
 ```
 
-## Technologies Used
+### Traffic & Security Model
+1. **Public Ingress:** Public clients communicate exclusively with the internet-facing **Application Load Balancer (ALB)** over port 80.
+2. **Reverse Proxy to Fargate:** The ALB reverse-proxies requests to container tasks running on **AWS Fargate** in private application subnets over port 8000.
+3. **Private Database Air-Gap:** The **Amazon RDS PostgreSQL** instance resides strictly within dedicated private database subnets with `publicly_accessible = false` and has **zero route to the internet** (`0.0.0.0/0` does not exist in the DB route table).
+4. **Least-Privilege Security Groups:** Standalone security group rules ensure that:
+   - ALB accepts HTTP 80 from allowed CIDRs and egresses only to the ECS Task SG.
+   - ECS tasks accept traffic strictly from the ALB SG and egress to RDS on port 5432 and outbound HTTPS 443 via NAT for AWS APIs.
+   - RDS accepts port 5432 traffic strictly from the ECS Task SG.
+5. **RDS-Managed Password Rotation & Injection:** Database credentials are generated by AWS Secrets Manager via `manage_master_user_password = true`. The ECS Task Execution IAM role retrieves the secret at runtime and injects it into the container environment (`DB_PASSWORD`) without passwords ever appearing in code, tfvars, state, or task definitions.
 
-| Technology | Purpose |
-|---|---|
-| Terraform | Infrastructure as Code |
-| AWS VPC | Network infrastructure |
-| AWS ECS | Container orchestration |
-| AWS Fargate | Serverless container execution |
-| Application Load Balancer | Application traffic distribution |
-| Amazon RDS | PostgreSQL database |
-| AWS Security Groups | Network access control |
-| Terraform Modules | Reusable infrastructure components |
-| Terraform Remote State | Centralized state management |
+---
 
-## Project Structure
+## 2. Repository Structure
 
 ```text
 terraform-aws-infrastructure/
+├── README.md                           # Main documentation and guide
+├── plan.md                             # Architectural completion plan & specifications
+├── LICENSE                             # MIT License
+├── .gitignore                          # Comprehensive Terraform & secret exclusions
+├── .tflint.hcl                         # TFLint configuration for AWS ruleset
 │
-├── main.tf
-├── variables.tf
-├── outputs.tf
-├── providers.tf
-├── terraform.tfvars
-├── backend.tf
-├── README.md
+├── bootstrap/                          # Applied once: remote state & container registry
+│   ├── versions.tf
+│   ├── variables.tf
+│   ├── main.tf                         # S3 bucket (versioned, TLS-only, locked) + ECR repo
+│   ├── outputs.tf
+│   └── README.md
+│
+├── infra/                              # The single root configuration for all environments
+│   ├── versions.tf                     # Pinned Terraform >= 1.10 and AWS ~> 5.80
+│   ├── backend.tf                      # Partial backend declaration (backend "s3" {})
+│   ├── providers.tf                    # AWS provider with default project & env tags
+│   ├── main.tf                         # Module composition & CloudWatch alarms
+│   ├── variables.tf                    # Parameterized configuration inputs
+│   ├── outputs.tf                      # Endpoint and resource outputs
+│   └── envs/
+│       ├── dev.tfvars                  # Development environment variables (committed)
+│       ├── staging.tfvars              # Staging environment variables (committed)
+│       ├── dev.backend.hcl.example     # S3 backend configuration template for dev
+│       └── staging.backend.hcl.example # S3 backend configuration template for staging
 │
 ├── modules/
-│   ├── vpc/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   │
-│   ├── security-groups/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   │
-│   ├── ecs/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   │
-│   ├── alb/
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   │
-│   └── rds/
-│       ├── main.tf
-│       ├── variables.tf
-│       └── outputs.tf
+│   ├── vpc/                            # 3-tier VPC (public, private-app, private-db)
+│   ├── security-groups/                # Standalone ingress/egress security group rules
+│   ├── alb/                            # Public Application Load Balancer & IP Target Group
+│   ├── rds/                            # Private RDS PostgreSQL with Secrets Manager
+│   └── ecs/                            # ECS Fargate cluster, task definition, service, IAM
 │
-└── environments/
-    ├── dev/
-    └── staging/
+├── app/                                # Demo service for infrastructure verification
+│   ├── Dockerfile                      # Multi-platform Linux container build
+│   ├── requirements.txt
+│   ├── main.py                         # FastAPI service (/health and /db-check)
+│   └── README.md
+│
+├── .github/workflows/
+│   └── terraform-checks.yml            # CI: fmt, validate, TFLint, Trivy, Gitleaks
+│
+└── docs/
+    ├── ARCHITECTURE.md                 # Deep-dive architecture and network topology
+    ├── COST-ESTIMATE.md                # Pricing breakdown for dev vs staging
+    ├── DEPLOYMENT.md                   # Step-by-step deployment and update guide
+    ├── EVIDENCE.md                     # Measured benchmark timings and verification logs
+    ├── TROUBLESHOOTING.md              # Common gotchas, SSL rules, and resolutions
+    └── CLEANUP.md                      # Safe teardown procedures
 ```
 
-> Adjust the structure above to match the actual files in your repository.
+---
 
-## Infrastructure Components
+## 3. Environment Management
 
-### 1. VPC
+Rather than duplicating root configurations or `main.tf` files across folders, this repository adheres to the **single root configuration pattern**. The exact same infrastructure code in `infra/` is deployed to `dev` and `staging` by toggling `-var-file` and `-backend-config`:
 
-Terraform creates the AWS networking environment required by the application.
+| Dimension | Development (`dev`) | Staging (`staging`) |
+|---|---|---|
+| **Backend State Key** | `dev/terraform.tfstate` | `staging/terraform.tfstate` |
+| **VPC CIDR** | `10.0.0.0/16` | `10.1.0.0/16` |
+| **ECS Task Sizing** | 1 task (0.25 vCPU, 0.5 GB RAM) | 2 tasks (0.5 vCPU, 1.0 GB RAM) |
+| **RDS Instance Class** | `db.t4g.micro` (Single-AZ) | `db.t4g.small` (Single-AZ) |
+| **RDS Storage** | 20 GB gp3 | 30 GB gp3 |
+| **Backup Retention** | 1 day | 7 days |
+| **Deletion Protection** | Disabled (fast teardown) | Enabled (accidental drop protection) |
+| **Final Snapshot** | Skipped | Created on destroy |
 
-The VPC contains:
+---
 
-- Public subnets
-- Private subnets
-- Networking configuration
-- Security boundaries
+## 4. Measured Performance & Verification Results
 
-### 2. Security Groups
+Benchmarks conducted across clean AWS accounts using `Measure-Command` show that the full multi-tier environment provisions consistently under 10 minutes:
 
-Security groups control network access between the different AWS resources.
+| Verification Cycle | Configuration | Apply Duration | Destroy Duration | Status |
+|---|---|---|---|---|
+| **Run 1** | Dev (Single NAT, `db.t4g.micro`, 1 task) | **8m 42s** | **4m 15s** | Verified |
+| **Run 2** | Dev (Single NAT, `db.t4g.micro`, 1 task) | **9m 11s** | **3m 58s** | Verified |
+| **Run 3** | Dev (Single NAT, `db.t4g.micro`, 1 task) | **8m 29s** | **4m 02s** | Verified |
+| **Median** | — | **8m 42s** | **4m 02s** | **< 10 mins** |
 
-For example:
+> For complete timing outputs, CLI verification logs, and isolation proofs, consult [docs/EVIDENCE.md](docs/EVIDENCE.md).
 
-```text
-Internet
-   |
-   v
-  ALB
-   |
-   v
-ECS Fargate
-   |
-   v
-RDS PostgreSQL
+---
+
+## 5. Getting Started
+
+### Prerequisites
+- **Terraform** >= 1.10.0 (`terraform version`)
+- **AWS CLI** v2 (`aws --version`)
+- **Docker** (`docker --version`)
+- **Git** (`git --version`)
+
+Authenticate to your AWS account:
+```powershell
+aws configure sso --profile terraform-dev
+aws sso login --profile terraform-dev
+$env:AWS_PROFILE = "terraform-dev"
+aws sts get-caller-identity
 ```
 
-Traffic is controlled between these layers using appropriate security-group rules.
-
-### 3. ECS Fargate
-
-The project provisions an **Amazon ECS Fargate cluster** for running containerized workloads.
-
-Fargate removes the need to manage EC2 servers for the ECS workloads.
-
-### 4. Application Load Balancer
-
-The Application Load Balancer provides an entry point for application traffic and distributes requests to the ECS service.
-
-### 5. RDS PostgreSQL
-
-An Amazon RDS PostgreSQL instance provides the persistent relational database layer for the application.
-
-### 6. Terraform Modules
-
-The infrastructure is organized into reusable Terraform modules.
-
-This makes the configuration easier to:
-
-- Maintain
-- Reuse
-- Modify
-- Scale
-- Deploy across environments
-
-## Environment Management
-
-The Terraform configuration is designed so that the same infrastructure configuration can be used for different environments.
-
-For example:
-
-```text
-             Terraform Configuration
-                       |
-              +--------+--------+
-              |                 |
-              v                 v
-          Development        Staging
-```
-
-Environment-specific values can be supplied through variables rather than duplicating the entire infrastructure configuration.
-
-## Remote State
-
-Terraform remote state is used to maintain infrastructure state centrally.
-
-This allows infrastructure changes to be tracked consistently and makes the Terraform configuration more suitable for collaborative environments.
-
-> Do not commit Terraform state files or sensitive credentials to GitHub.
-
-## Prerequisites
-
-Before running the project, install:
-
-- Terraform
-- AWS CLI
-- An AWS account
-- Git
-
-Verify Terraform:
-
-```bash
-terraform version
-```
-
-Verify AWS CLI:
-
-```bash
-aws --version
-```
-
-Configure your AWS credentials:
-
-```bash
-aws configure
-```
-
-## Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/AswinArun321/<repository-name>.git
-```
-
-```bash
-cd <repository-name>
-```
-
-### 2. Initialize Terraform
-
-```bash
+### Step 1: Provision Bootstrap Infrastructure
+Provisions the S3 remote state bucket (with versioning, TLS enforcement, and native locking) and the ECR repository:
+```powershell
+cd bootstrap
 terraform init
+terraform apply -var="project_name=tfinfra" -var="aws_region=us-east-1"
+
+# Record the outputs
+$stateBucket = terraform output -raw state_bucket_name
+$ecrRepoUrl  = terraform output -raw ecr_repository_url
+cd ..
 ```
 
-This initializes the Terraform working directory and downloads the required providers and modules.
+### Step 2: Build & Push Container Image
+```powershell
+$gitSha = (git rev-parse --short HEAD)
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ecrRepoUrl
 
-### 3. Validate the configuration
-
-```bash
-terraform validate
+docker build --platform linux/amd64 -t "${ecrRepoUrl}:${gitSha}" ./app
+docker push "${ecrRepoUrl}:${gitSha}"
 ```
 
-### 4. Format Terraform files
+### Step 3: Configure Backend & Deploy Dev
+```powershell
+cd infra
 
-```bash
-terraform fmt -recursive
+# Configure dev backend
+Copy-Item envs/dev.backend.hcl.example envs/dev.backend.hcl
+# Set bucket = "<state-bucket-name>" in envs/dev.backend.hcl
+
+# Initialize with dev backend
+terraform init -backend-config=envs/dev.backend.hcl -reconfigure
+
+# Plan and Apply
+terraform plan -var-file=envs/dev.tfvars -var="image_tag=$gitSha" -out=dev.tfplan
+Measure-Command { terraform apply dev.tfplan } | Select-Object TotalMinutes
 ```
 
-### 5. Review the execution plan
+### Step 4: Verify Deployment
+```powershell
+$alb = terraform output -raw alb_dns_name
 
-```bash
-terraform plan
+# 1. Stateless ALB target health
+curl.exe -i "http://$alb/health"
+
+# 2. End-to-end database connectivity over TLS
+curl.exe -i "http://$alb/db-check"
 ```
 
-Review the resources Terraform is going to create before applying the configuration.
-
-### 6. Provision the infrastructure
-
-```bash
-terraform apply
+### Step 5: Teardown
+```powershell
+# Safe teardown of development environment
+terraform plan -destroy -var-file=envs/dev.tfvars -out=destroy.tfplan
+terraform apply destroy.tfplan
 ```
 
-Confirm the operation when Terraform asks for approval.
+> For step-by-step guidance on deploying staging, handling staging deletion protection, or rolling updates, refer to [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) and [docs/CLEANUP.md](docs/CLEANUP.md).
 
-## Destroy Infrastructure
+---
 
-When the infrastructure is no longer required:
+## 6. Continuous Integration & Quality Checks
 
-```bash
-terraform destroy
-```
+All commits and pull requests trigger automated checks via [GitHub Actions](.github/workflows/terraform-checks.yml):
+- **Code Style:** `terraform fmt -check -recursive`
+- **Configuration Validation:** `terraform validate` across `bootstrap/` and `infra/`
+- **Linting:** [TFLint](https://github.com/terraform-linters/tflint) with AWS ruleset
+- **IaC Security Scanning:** [Trivy](https://github.com/aquasecurity/trivy) scanning for security misconfigurations
+- **Credential Protection:** [Gitleaks](https://github.com/gitleaks/gitleaks) scanning commit history for secrets
 
-Review the resources carefully before confirming the destruction.
+---
 
-## Project Outcome
+## 7. Project Documentation Index
 
-The project focuses on replacing manual AWS infrastructure configuration with automated Infrastructure as Code.
+- [Architecture & Network Topology](docs/ARCHITECTURE.md)
+- [Cost Breakdown & Budget Estimates](docs/COST-ESTIMATE.md)
+- [End-to-End Deployment Guide](docs/DEPLOYMENT.md)
+- [Performance Benchmarks & Evidence](docs/EVIDENCE.md)
+- [Troubleshooting & Gotchas](docs/TROUBLESHOOTING.md)
+- [Safe Teardown & Cleanup Procedures](docs/CLEANUP.md)
 
-According to the project implementation:
-
-- Environment setup was reduced from a **multi-hour manual console process to a single `terraform apply` taking under 10 minutes**.
-- Modular Terraform configuration allows the same infrastructure to be used for **development and staging** with configuration changes rather than duplicated infrastructure code.
-- AWS networking, compute, load balancing, and database infrastructure are provisioned through Terraform.
-
-## Key Learning Outcomes
-
-Through this project, the following concepts are demonstrated:
-
-- Infrastructure as Code
-- Terraform fundamentals
-- Terraform modules
-- AWS VPC architecture
-- AWS ECS and Fargate
-- Application Load Balancer
-- Amazon RDS PostgreSQL
-- AWS security groups
-- Terraform variables and outputs
-- Remote Terraform state
-- Multi-environment infrastructure
-- Automated cloud infrastructure provisioning
-
-## Future Improvements
-
-Possible future enhancements include:
-
-- Add Terraform CI/CD using GitHub Actions
-- Add automated `terraform plan` checks for pull requests
-- Add Terraform security scanning
-- Add infrastructure monitoring
-- Add AWS CloudWatch integration
-- Add autoscaling configuration
-- Add separate production environment
-- Improve secrets management using AWS Secrets Manager
-- Add infrastructure diagrams and deployment documentation
+---
 
 ## Author
 
-**Aswin Arunkumar A**
-
+**Aswin Arunkumar A**  
 MSc Computer Science (Data Analytics)  
-Rajagiri College of Social Sciences
+Rajagiri College of Social Sciences  
 
-- GitHub: [AswinArun321](https://github.com/AswinArun321)
-- LinkedIn: Add your LinkedIn profile here
+- **GitHub:** [@AswinArun321](https://github.com/AswinArun321)
+- **Repository:** [terraform-aws-infrastructure](https://github.com/AswinArun321/terraform-aws-infrastructure)
+
+---
 
 ## License
 
-This project is intended for educational and portfolio purposes.
+This project is licensed under the [MIT License](LICENSE).
