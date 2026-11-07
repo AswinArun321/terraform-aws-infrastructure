@@ -1,0 +1,10 @@
+# Backend configuration for Dev environment
+# Usage:
+# Copy this file to dev.backend.hcl and substitute <state-bucket-name>
+# terraform init -backend-config=envs/dev.backend.hcl -reconfigure
+
+bucket       = "<state-bucket-name>"
+key          = "dev/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true
