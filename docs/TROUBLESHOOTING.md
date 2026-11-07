@@ -123,3 +123,18 @@ Lock Info:
   1. Confirm no active Terraform process is running.
   2. Run `terraform force-unlock <LOCK_ID>`.
 
+---
+
+## 6. Security Scanning & Compliance Diagnostics
+
+### A. Checkov Modular Graph Traversal (`CKV2_AWS_5`)
+- **Symptom:** Checkov flags `CKV2_AWS_5: Ensure that Security Groups are attached to another resource` on `aws_security_group.alb`, `ecs`, or `rds`.
+- **Cause:** When scanning modular Terraform repositories, Checkov's static graph engine evaluates module directories in isolation before whole-graph synthesis, losing the reference passed into `infra/main.tf`.
+- **Resolution:** Verified that each security group ID is exported in `modules/security-groups/outputs.tf` and explicitly wired into `module.alb`, `module.ecs`, and `module.rds` in `infra/main.tf`. Inline `#checkov:skip=CKV2_AWS_5` annotations are provided with architectural context.
+
+### B. Testing ALB Over HTTP When HTTPS Redirection Is Configured
+- **Symptom:** `curl http://<alb-dns>/health` returns `HTTP/1.1 301 Moved Permanently` instead of JSON payload.
+- **Cause:** Port 80 listener enforces HTTPS redirection (`CKV_AWS_2`, `CKV2_AWS_20`).
+- **Resolution:** When an ACM certificate is provisioned, use `curl -L https://<domain>/health` or pass `-k` for self-signed certificates. In development environments without an ACM certificate, request redirection confirms that the ALB listener security rule is functioning as designed.
+
+

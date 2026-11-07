@@ -24,6 +24,8 @@ locals {
 # -----------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "state" {
+  #checkov:skip=CKV_AWS_18: "S3 access logging is configurable via var.access_logs_bucket; disabled by default to avoid creating billable dedicated logging buckets in zero-cost/learning environments"
+  #checkov:skip=CKV_AWS_144: "Cross-region replication is configurable for multi-region DR; disabled by default to prevent cross-region data transfer charges and secondary S3 storage costs in zero-cost environments"
   bucket        = local.state_bucket_name
   force_destroy = false
 
@@ -31,6 +33,15 @@ resource "aws_s3_bucket" "state" {
     prevent_destroy = true
   }
 }
+
+resource "aws_s3_bucket_logging" "state" {
+  count = var.access_logs_bucket != null ? 1 : 0
+
+  bucket        = aws_s3_bucket.state.id
+  target_bucket = var.access_logs_bucket
+  target_prefix = "state-logs/"
+}
+
 
 resource "aws_s3_bucket_versioning" "state" {
   bucket = aws_s3_bucket.state.id
@@ -45,7 +56,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm = "aws:kms"
     }
   }
 }
@@ -96,7 +107,16 @@ resource "aws_s3_bucket_lifecycle_configuration" "state" {
     noncurrent_version_expiration {
       noncurrent_days = 30
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
+}
+
+resource "aws_s3_bucket_notification" "state" {
+  bucket      = aws_s3_bucket.state.id
+  eventbridge = true
 }
 
 # -----------------------------------------------------------------------------
@@ -112,7 +132,7 @@ resource "aws_ecr_repository" "app" {
   }
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = "KMS"
   }
 }
 

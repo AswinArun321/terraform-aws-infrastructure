@@ -1,5 +1,5 @@
 config {
-  module = true
+  call_module_type = "all"
   force  = false
 }
 
@@ -36,4 +36,5 @@ rule "terraform_typed_variables" {
 rule "terraform_naming_conventions" {
   enabled = true
 }
+
 

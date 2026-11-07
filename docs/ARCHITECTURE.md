@@ -122,6 +122,8 @@ graph TD
 
 - **Engine:** PostgreSQL on Amazon RDS.
 - **Storage:** General Purpose SSD (`gp3`) with storage encryption enabled via AWS KMS.
+- **TLS Enforcement & Query Auditing:** Parameter group enforces TLS via `rds.force_ssl = "1"` and logs all SQL queries with `log_statement = "all"` and `log_min_duration_statement = "1000"` (1 second threshold).
+- **Diagnostics & Telemetry:** CloudWatch log exports enabled for `postgresql` and `upgrade` logs; Performance Insights enabled with 7-day free tier retention; IAM database authentication enabled (`iam_database_authentication_enabled = true`).
 - **RDS-Managed Password Rotation & Storage:**
   - Master credentials are generated and managed directly by AWS via `manage_master_user_password = true`.
   - Passwords are **never stored in Terraform state**, `.tfvars` files, source control, or outputs.
@@ -133,10 +135,12 @@ graph TD
 
 ## 6. Observability & Monitoring
 
-- **Container Logs:** Forwarded to Amazon CloudWatch Logs using the `awslogs` log driver.
-- **Log Retention:** Explicit retention policy (e.g. 7 days in dev, 30 days in staging) prevents unbounded log costs.
+- **Container Logs:** Forwarded to Amazon CloudWatch Logs using the `awslogs` log driver with 365-day compliance retention.
+- **Encryption at Rest:** CloudWatch Log Group uses AWS-managed encryption by default, with optional customer-managed KMS key support via `var.cloudwatch_kms_key_arn`.
+- **VPC Flow Logs:** Optional VPC network interface traffic auditing supported via `enable_vpc_flow_logs` and `flow_log_destination_arn`.
 - **Health Checks:**
-  - ALB Target Group monitors `GET /health`.
+  - ALB Target Group monitors `GET /health` with HTTP/HTTPS configurable health checks.
   - Application exposes `GET /db-check` to confirm end-to-end database connectivity and SSL enforcement.
 - **Alarms:** CloudWatch alarm on ALB `UnHealthyHostCount` alerts on any sustained container degradation.
+
 

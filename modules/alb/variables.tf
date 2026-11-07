@@ -43,6 +43,55 @@ variable "health_check_path" {
 variable "enable_deletion_protection" {
   description = "Enable or disable deletion protection on the ALB."
   type        = bool
+  default     = true
+}
+
+variable "certificate_arn" {
+  description = "Optional ACM certificate ARN for enabling HTTPS on the ALB. When omitted, HTTPS listener is disabled."
+  type        = string
+  default     = null
+}
+
+variable "ssl_policy" {
+  description = "Security policy for the ALB HTTPS listener enforcing TLS 1.2+."
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}
+
+variable "enable_access_logs" {
+  description = "Enable or disable S3 access logging for the Application Load Balancer."
+  type        = bool
   default     = false
 }
+
+variable "access_logs_bucket" {
+  description = "S3 bucket name to store ALB access logs."
+  type        = string
+  default     = null
+}
+
+variable "access_logs_prefix" {
+  description = "S3 prefix/folder for ALB access logs."
+  type        = string
+  default     = "alb-logs"
+}
+
+variable "web_acl_arn" {
+  description = "Optional ARN of an AWS WAFv2 Web ACL to associate with the Application Load Balancer."
+  type        = string
+  default     = null
+}
+
+variable "target_group_protocol" {
+  description = "Protocol to use for routing traffic to targets (HTTP or HTTPS)."
+  type        = string
+  default     = "HTTP"
+}
+
+variable "health_check_protocol" {
+  description = "Protocol to use for health check requests (HTTP or HTTPS)."
+  type        = string
+  default     = "HTTP"
+}
+
 

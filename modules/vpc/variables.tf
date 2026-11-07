@@ -30,3 +30,33 @@ variable "nat_gateway_mode" {
   }
 }
 
+variable "availability_zone_names" {
+  description = "Optional list of availability zone names to filter the available AZs. Defaults to wildcard matching all available zones in the region."
+  type        = list(string)
+  default     = ["*"]
+}
+
+variable "enable_flow_log" {
+  description = "Whether to enable VPC Flow Logs. Defaults to false to prevent ongoing CloudWatch ingestion charges."
+  type        = bool
+  default     = false
+}
+
+variable "flow_log_destination_arn" {
+  description = "The ARN of the CloudWatch Log Group or S3 bucket destination for VPC flow logs."
+  type        = string
+  default     = null
+}
+
+variable "flow_log_traffic_type" {
+  description = "The type of traffic to capture in VPC Flow Logs (ALL, ACCEPT, REJECT)."
+  type        = string
+  default     = "ALL"
+}
+
+variable "flow_log_iam_role_arn" {
+  description = "The ARN of the IAM role that allows AWS to publish flow logs to CloudWatch Logs."
+  type        = string
+  default     = null
+}
+

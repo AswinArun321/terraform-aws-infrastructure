@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 
 resource "aws_security_group" "alb" {
+  #checkov:skip=CKV2_AWS_5: "Security group is attached to the Application Load Balancer in infra/main.tf via module output"
   name_prefix = "${var.project_name}-${var.environment}-alb-sg-"
   description = "Security group for the public Application Load Balancer"
   vpc_id      = var.vpc_id
@@ -17,6 +18,7 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_security_group" "ecs" {
+  #checkov:skip=CKV2_AWS_5: "Security group is attached to the ECS Fargate Service in infra/main.tf via module output"
   name_prefix = "${var.project_name}-${var.environment}-ecs-sg-"
   description = "Security group for ECS Fargate application tasks"
   vpc_id      = var.vpc_id
@@ -31,6 +33,7 @@ resource "aws_security_group" "ecs" {
 }
 
 resource "aws_security_group" "rds" {
+  #checkov:skip=CKV2_AWS_5: "Security group is attached to the RDS PostgreSQL instance in infra/main.tf via module output"
   name_prefix = "${var.project_name}-${var.environment}-rds-sg-"
   description = "Security group for private RDS PostgreSQL database instance"
   vpc_id      = var.vpc_id

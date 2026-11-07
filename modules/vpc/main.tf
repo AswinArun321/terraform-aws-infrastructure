@@ -1,5 +1,10 @@
 data "aws_availability_zones" "available" {
   state = "available"
+
+  filter {
+    name   = "zone-name"
+    values = var.availability_zone_names
+  }
 }
 
 locals {
@@ -11,6 +16,7 @@ locals {
 # -----------------------------------------------------------------------------
 
 resource "aws_vpc" "this" {
+  #checkov:skip=CKV2_AWS_11: "VPC flow logging is supported via aws_flow_log and var.enable_flow_log; disabled by default to maintain zero-cost operation without incurring CloudWatch log ingestion charges"
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
@@ -29,7 +35,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 4, count.index)
   availability_zone       = local.azs[count.index]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "${var.project_name}-${var.environment}-public-${local.azs[count.index]}"
@@ -158,3 +164,34 @@ resource "aws_route_table_association" "private_db" {
   route_table_id = aws_route_table.private_db.id
 }
 
+# -----------------------------------------------------------------------------
+# Default Security Group - Deny All Traffic
+# -----------------------------------------------------------------------------
+
+resource "aws_default_security_group" "this" {
+  vpc_id = aws_vpc.this.id
+
+  ingress = []
+  egress  = []
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-default-sg"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# VPC Flow Logs (Configurable via var.enable_flow_log)
+# -----------------------------------------------------------------------------
+
+resource "aws_flow_log" "this" {
+  count                = var.enable_flow_log ? 1 : 0
+  vpc_id               = aws_vpc.this.id
+  traffic_type         = var.flow_log_traffic_type
+  log_destination_type = var.flow_log_iam_role_arn != null ? "cloud-watch-logs" : "s3"
+  log_destination      = var.flow_log_destination_arn
+  iam_role_arn         = var.flow_log_iam_role_arn
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-vpc-flow-log"
+  }
+}

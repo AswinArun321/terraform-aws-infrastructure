@@ -81,9 +81,9 @@ variable "cpu_architecture" {
 }
 
 variable "log_retention_in_days" {
-  description = "Number of days to retain container logs in CloudWatch Logs."
+  description = "Number of days to retain container logs in CloudWatch Logs (at least 365 days recommended for compliance)."
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "health_check_grace_period_seconds" {
@@ -119,4 +119,11 @@ variable "db_secret_arn" {
   description = "ARN of the AWS Secrets Manager secret holding the RDS master password."
   type        = string
 }
+
+variable "cloudwatch_kms_key_arn" {
+  description = "Optional KMS Key ARN to encrypt CloudWatch log group. If null, default CloudWatch service encryption is used."
+  type        = string
+  default     = null
+}
+
 

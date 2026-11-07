@@ -58,6 +58,13 @@ jobs:
           severity: "HIGH,CRITICAL"
           exit-code: "0"
 
+      - name: "Run Checkov IaC Security Scan"
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+          output_format: cli
+          soft_fail: false
+
       - name: "Run Gitleaks Credential Scan"
         uses: gitleaks/gitleaks-action@v2
         env:

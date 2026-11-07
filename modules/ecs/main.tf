@@ -16,8 +16,10 @@ resource "aws_ecs_cluster" "this" {
 }
 
 resource "aws_cloudwatch_log_group" "this" {
+  #checkov:skip=CKV_AWS_158: "CloudWatch KMS encryption is configurable via var.cloudwatch_kms_key_arn; default AWS-managed encryption is used to avoid customer-managed KMS key charges ($1.00/key/month) in zero-cost environments"
   name              = "/ecs/${var.project_name}-${var.environment}-app"
   retention_in_days = var.log_retention_in_days
+  kms_key_id        = var.cloudwatch_kms_key_arn
 
   tags = {
     Name = "${var.project_name}-${var.environment}-app-logs"

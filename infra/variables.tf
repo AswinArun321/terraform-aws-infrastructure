@@ -44,7 +44,7 @@ variable "nat_gateway_mode" {
 variable "alb_ingress_cidr_blocks" {
   description = "Allowed CIDRs for inbound HTTP traffic to the ALB."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 # -----------------------------------------------------------------------------
@@ -106,13 +106,13 @@ variable "ecs_cpu_architecture" {
 variable "log_retention_in_days" {
   description = "Retention period for container CloudWatch logs."
   type        = number
-  default     = 7
+  default     = 365
 }
 
 variable "enable_deletion_protection_alb" {
   description = "Enable or disable deletion protection on the ALB."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # -----------------------------------------------------------------------------
@@ -164,7 +164,7 @@ variable "db_multi_az" {
 variable "db_deletion_protection" {
   description = "Enable accidental deletion protection on RDS."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "db_skip_final_snapshot" {
@@ -172,4 +172,88 @@ variable "db_skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+# -----------------------------------------------------------------------------
+# Optional Production & Hardening Variables (Zero-Cost Compatible Defaults)
+# -----------------------------------------------------------------------------
+
+variable "certificate_arn" {
+  description = "Optional ACM certificate ARN for the ALB HTTPS listener."
+  type        = string
+  default     = null
+}
+
+variable "alb_ssl_policy" {
+  description = "Security policy for the ALB HTTPS listener enforcing TLS 1.2+."
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}
+
+variable "alb_enable_access_logs" {
+  description = "Enable access logging for the ALB to S3."
+  type        = bool
+  default     = false
+}
+
+variable "alb_access_logs_bucket" {
+  description = "S3 bucket name for ALB access logs."
+  type        = string
+  default     = null
+}
+
+variable "alb_access_logs_prefix" {
+  description = "S3 key prefix for ALB access logs."
+  type        = string
+  default     = "alb-logs"
+}
+
+variable "alb_web_acl_arn" {
+  description = "Optional AWS WAFv2 Web ACL ARN to associate with the ALB."
+  type        = string
+  default     = null
+}
+
+variable "ecs_cloudwatch_kms_key_arn" {
+  description = "Optional KMS Key ARN to encrypt ECS CloudWatch log group."
+  type        = string
+  default     = null
+}
+
+variable "db_monitoring_interval" {
+  description = "RDS Enhanced Monitoring collection interval in seconds (0 to disable, 1, 5, 10, 15, 30, 60)."
+  type        = number
+  default     = 0
+}
+
+variable "db_monitoring_role_arn" {
+  description = "IAM role ARN permitting RDS to publish Enhanced Monitoring metrics."
+  type        = string
+  default     = null
+}
+
+variable "enable_vpc_flow_logs" {
+  description = "Enable VPC Flow Logs."
+  type        = bool
+  default     = false
+}
+
+variable "vpc_flow_log_destination_arn" {
+  description = "Destination CloudWatch Log Group ARN or S3 Bucket ARN for VPC Flow Logs."
+  type        = string
+  default     = null
+}
+
+variable "vpc_flow_log_traffic_type" {
+  description = "Traffic type to record in VPC Flow Logs (ALL, ACCEPT, REJECT)."
+  type        = string
+  default     = "ALL"
+}
+
+variable "vpc_flow_log_iam_role_arn" {
+  description = "IAM role ARN required when publishing VPC Flow Logs to CloudWatch Logs."
+  type        = string
+  default     = null
+}
+
+
 

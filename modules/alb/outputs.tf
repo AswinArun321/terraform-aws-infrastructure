@@ -28,3 +28,9 @@ output "listener_arn" {
   value       = aws_lb_listener.http.arn
 }
 
+output "https_listener_arn" {
+  description = "The ARN of the HTTPS listener (if certificate_arn was provided)."
+  value       = try(aws_lb_listener.https[0].arn, null)
+}
+
+

@@ -35,7 +35,7 @@ The main cost drivers in this architecture are:
 | **RDS Deployment** | Single-AZ | Single-AZ (Multi-AZ optional) |
 | **RDS Storage** | 20 GB gp3 | 30 GB gp3 |
 | **RDS Backup Retention** | 1 day | 7 days |
-| **Deletion Protection** | Disabled (fast destroy) | Enabled (accidental drop protection) |
+| **Deletion Protection** | Enabled (configurable) | Enabled (configurable) |
 | **Final Snapshot** | Skipped | Created upon destroy |
 
 ---
@@ -102,4 +102,22 @@ Because educational and portfolio verification environments are deployed, tested
    - CloudWatch log groups are explicitly configured with `retention_in_days = 7` (dev) to prevent unbounded log storage accumulation.
 5. **Graviton (ARM64) Instances:**
    - `db.t4g` instances use AWS Graviton2 processors, providing up to 20% cost savings over comparable x86 `db.t3` instances.
+
+---
+
+## 6. Cost Impact of Checkov Security Hardening (Zero-Cost Design Safeguards)
+
+To ensure this project strictly adheres to **zero unexpected charges**, specific high-cost features flagged by Checkov compliance rules are engineered as optional, configurable inputs rather than hardcoded billable services:
+
+| Security Feature / Checkov Policy | Default Setting | Paid AWS Service Avoided | Estimated Monthly Cost Avoided | Architectural Implementation |
+|---|---|---|---|---|
+| **RDS Multi-AZ Deployment** (`CKV_AWS_157`) | `false` (in dev) | Synchronous standby database compute & storage | **~$11.68 / month** (dev) | Configurable via `db_multi_az`. Single-AZ satisfies all dev requirements. |
+| **AWS WAFv2 Association** (`CKV2_AWS_28`, `CKV2_AWS_76`) | `null` | AWS WAF Web ACL + Managed Rule Groups | **~$6.00 to $15.00+ / month** | Supported via `alb_web_acl_arn` and `aws_wafv2_web_acl_association` without provisioning paid ACLs. |
+| **Customer-Managed KMS Keys** (`CKV_AWS_136`, `CKV_AWS_145`, `CKV_AWS_158`, `CKV_AWS_354`) | AWS-managed default keys | 4× Customer Master Keys (CMKs) in AWS KMS | **~$4.00 / month** ($1/key/mo) | Uses AWS-managed keys (`aws/ecr`, `alias/aws/s3`, `aws/rds`). CMK ARNs accept optional inputs. |
+| **RDS Enhanced Monitoring** (`CKV_AWS_118`) | `0` (disabled) | CloudWatch Metrics detailed OS metric streams | **~$1.50 to $3.00 / month** | Configurable via `db_monitoring_interval` and `db_monitoring_role_arn`. |
+| **VPC Flow Logs** (`CKV2_AWS_11`) | `false` | CloudWatch Logs log group ingestion and storage | **~$2.50 to $5.00+ / month** | Configurable via `enable_vpc_flow_logs` and `vpc_flow_log_destination_arn`. |
+| **ALB Access Logging** (`CKV_AWS_91`) | `false` | Dedicated S3 logging bucket and API requests | **~$0.50 / month** | Configurable via `alb_enable_access_logs` and `alb_access_logs_bucket`. |
+| **S3 Cross-Region Replication** (`CKV_AWS_144`) | `false` | Secondary S3 bucket in another region + inter-region transfer | **~$1.00+ / month** | Single-region versioned state with native S3 locking satisfies state requirements. |
+| **Total Avoided Charges** | — | — | **~$27.18 to $40.00+ / month** | **Strict Zero-Cost Safeguards Active** |
+
 

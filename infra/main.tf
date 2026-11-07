@@ -3,11 +3,15 @@
 # -----------------------------------------------------------------------------
 
 module "vpc" {
-  source           = "../modules/vpc"
-  project_name     = var.project_name
-  environment      = var.environment
-  vpc_cidr         = var.vpc_cidr
-  nat_gateway_mode = var.nat_gateway_mode
+  source                   = "../modules/vpc"
+  project_name             = var.project_name
+  environment              = var.environment
+  vpc_cidr                 = var.vpc_cidr
+  nat_gateway_mode         = var.nat_gateway_mode
+  enable_flow_log          = var.enable_vpc_flow_logs
+  flow_log_destination_arn = var.vpc_flow_log_destination_arn
+  flow_log_traffic_type    = var.vpc_flow_log_traffic_type
+  flow_log_iam_role_arn    = var.vpc_flow_log_iam_role_arn
 }
 
 # -----------------------------------------------------------------------------
@@ -37,6 +41,12 @@ module "alb" {
   container_port             = var.container_port
   health_check_path          = var.health_check_path
   enable_deletion_protection = var.enable_deletion_protection_alb
+  certificate_arn            = var.certificate_arn
+  ssl_policy                 = var.alb_ssl_policy
+  enable_access_logs         = var.alb_enable_access_logs
+  access_logs_bucket         = var.alb_access_logs_bucket
+  access_logs_prefix         = var.alb_access_logs_prefix
+  web_acl_arn                = var.alb_web_acl_arn
 }
 
 # -----------------------------------------------------------------------------
@@ -58,6 +68,8 @@ module "rds" {
   multi_az                = var.db_multi_az
   deletion_protection     = var.db_deletion_protection
   skip_final_snapshot     = var.db_skip_final_snapshot
+  monitoring_interval     = var.db_monitoring_interval
+  monitoring_role_arn     = var.db_monitoring_role_arn
 }
 
 # -----------------------------------------------------------------------------
@@ -80,12 +92,14 @@ module "ecs" {
   desired_count          = var.ecs_desired_count
   cpu_architecture       = var.ecs_cpu_architecture
   log_retention_in_days  = var.log_retention_in_days
+  cloudwatch_kms_key_arn = var.ecs_cloudwatch_kms_key_arn
   db_host                = module.rds.address
   db_port                = module.rds.port
   db_name                = module.rds.db_name
   db_user                = module.rds.db_username
   db_secret_arn          = module.rds.master_user_secret_arn
 }
+
 
 # -----------------------------------------------------------------------------
 # CloudWatch Alarm: ALB UnHealthyHostCount (Operational Tier B)

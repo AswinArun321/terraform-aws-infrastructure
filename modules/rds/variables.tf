@@ -74,7 +74,7 @@ variable "multi_az" {
 variable "deletion_protection" {
   description = "Enable or disable accidental deletion protection."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "skip_final_snapshot" {
@@ -82,4 +82,53 @@ variable "skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+variable "enabled_cloudwatch_logs_exports" {
+  description = "Set of log types to enable for exporting to CloudWatch logs."
+  type        = list(string)
+  default     = ["postgresql", "upgrade"]
+}
+
+variable "iam_database_authentication_enabled" {
+  description = "Whether to enable IAM database authentication."
+  type        = bool
+  default     = true
+}
+
+variable "performance_insights_enabled" {
+  description = "Whether to enable Performance Insights for the database instance."
+  type        = bool
+  default     = true
+}
+
+variable "performance_insights_retention_period" {
+  description = "Amount of time in days to retain Performance Insights data (7 days is free tier)."
+  type        = number
+  default     = 7
+}
+
+variable "performance_insights_kms_key_id" {
+  description = "The ARN for the KMS key to encrypt Performance Insights data. If not specified, the default AWS-managed key will be used."
+  type        = string
+  default     = null
+}
+
+variable "parameter_group_family" {
+  description = "The database parameter group family."
+  type        = string
+  default     = "postgres16"
+}
+
+variable "monitoring_interval" {
+  description = "The interval, in seconds, between points when Enhanced Monitoring metrics are collected (0 to disable, 1, 5, 10, 15, 30, 60)."
+  type        = number
+  default     = 0
+}
+
+variable "monitoring_role_arn" {
+  description = "The ARN for the IAM role that permits RDS to send enhanced monitoring metrics to CloudWatch Logs."
+  type        = string
+  default     = null
+}
+
 

@@ -22,3 +22,10 @@ variable "ecr_repository_name" {
   default     = "tfinfra-app"
 }
 
+variable "access_logs_bucket" {
+  description = "Optional S3 bucket name for storing S3 access logs. If null, bucket logging is disabled."
+  type        = string
+  default     = null
+}
+
+
