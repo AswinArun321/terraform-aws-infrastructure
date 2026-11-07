@@ -27,3 +27,4 @@ output "cloudwatch_log_group_name" {
   description = "The name of the CloudWatch Log Group for container logs."
   value       = aws_cloudwatch_log_group.this.name
 }
+

@@ -139,3 +139,4 @@ graph TD
   - ALB Target Group monitors `GET /health`.
   - Application exposes `GET /db-check` to confirm end-to-end database connectivity and SSL enforcement.
 - **Alarms:** CloudWatch alarm on ALB `UnHealthyHostCount` alerts on any sustained container degradation.
+

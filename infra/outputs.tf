@@ -47,3 +47,4 @@ output "rds_secret_arn" {
   description = "ARN of the Secrets Manager secret managing the RDS master credentials."
   value       = module.rds.master_user_secret_arn
 }
+

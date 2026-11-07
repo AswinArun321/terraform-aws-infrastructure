@@ -36,3 +36,4 @@ rule "terraform_typed_variables" {
 rule "terraform_naming_conventions" {
   enabled = true
 }
+

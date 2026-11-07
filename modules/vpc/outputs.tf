@@ -32,3 +32,4 @@ output "availability_zones" {
   description = "The availability zones utilized for subnet provisioning."
   value       = local.azs
 }
+

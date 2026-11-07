@@ -111,3 +111,4 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
     Name = "${var.project_name}-${var.environment}-unhealthy-hosts-alarm"
   }
 }
+

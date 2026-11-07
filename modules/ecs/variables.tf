@@ -119,3 +119,4 @@ variable "db_secret_arn" {
   description = "ARN of the AWS Secrets Manager secret holding the RDS master password."
   type        = string
 }
+

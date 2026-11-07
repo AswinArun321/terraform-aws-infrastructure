@@ -22,3 +22,4 @@ output "ecr_repository_name" {
   description = "Name of the Amazon ECR repository."
   value       = aws_ecr_repository.app.name
 }
+

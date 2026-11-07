@@ -194,3 +194,4 @@ resource "aws_ecs_service" "this" {
     Name = "${var.project_name}-${var.environment}-service"
   }
 }
+

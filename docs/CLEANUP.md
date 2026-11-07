@@ -120,3 +120,4 @@ terraform destroy -var="project_name=tfinfra" -var="aws_region=us-east-1"
 Log in to the AWS Console the following morning and check:
 1. **AWS Cost Explorer:** Verify that daily spend drops to $0.00.
 2. **AWS Billing Dashboard:** Confirm no active hourly charges for NAT Gateways, ALBs, or Elastic IPs.
+

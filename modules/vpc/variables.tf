@@ -29,3 +29,4 @@ variable "nat_gateway_mode" {
     error_message = "nat_gateway_mode must be either 'single' or 'none'."
   }
 }
+

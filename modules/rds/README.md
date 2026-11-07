@@ -55,3 +55,4 @@ module "rds" {
 | `port` | Database port (5432) |
 | `db_name` | Database name |
 | `master_user_secret_arn` | Secrets Manager secret ARN for the master password |
+

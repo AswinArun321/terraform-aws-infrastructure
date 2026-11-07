@@ -69,3 +69,4 @@ module "ecs" {
 | `service_id` | ECS Service ID |
 | `task_definition_arn` | Task Definition ARN |
 | `cloudwatch_log_group_name` | CloudWatch Log Group Name |
+

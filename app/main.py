@@ -100,3 +100,4 @@ def db_check():
     finally:
         if conn is not None:
             conn.close()
+

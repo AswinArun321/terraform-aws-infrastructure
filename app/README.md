@@ -26,3 +26,4 @@ A lightweight, production-ready Python service used to demonstrate and verify th
 docker build --platform linux/amd64 -t tfinfra-app:local .
 docker run -p 8000:8000 tfinfra-app:local
 ```
+

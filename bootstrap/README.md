@@ -43,3 +43,4 @@ terraform apply -var="project_name=tfinfra" -var="aws_region=us-east-1"
 | `state_bucket_arn` | ARN of the state S3 bucket |
 | `ecr_repository_url` | URL used for `docker tag` and `docker push` |
 | `ecr_repository_arn` | ARN of the ECR repository |
+

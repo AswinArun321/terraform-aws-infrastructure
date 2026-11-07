@@ -41,3 +41,4 @@ module "vpc" {
 | `private_db_subnet_ids` | List of 2 private DB subnet IDs |
 | `nat_gateway_id` | ID of the provisioned NAT Gateway (or null) |
 | `availability_zones` | List of the 2 AZs used |
+

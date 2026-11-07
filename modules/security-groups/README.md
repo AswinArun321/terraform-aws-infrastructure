@@ -46,3 +46,4 @@ module "security_groups" {
 | `alb_security_group_id` | Security Group ID for ALB |
 | `ecs_security_group_id` | Security Group ID for ECS tasks |
 | `rds_security_group_id` | Security Group ID for RDS instance |
+

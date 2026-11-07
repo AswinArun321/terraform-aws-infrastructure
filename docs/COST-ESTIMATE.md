@@ -102,3 +102,4 @@ Because educational and portfolio verification environments are deployed, tested
    - CloudWatch log groups are explicitly configured with `retention_in_days = 7` (dev) to prevent unbounded log storage accumulation.
 5. **Graviton (ARM64) Instances:**
    - `db.t4g` instances use AWS Graviton2 processors, providing up to 20% cost savings over comparable x86 `db.t3` instances.
+
