@@ -1,0 +1,64 @@
+name: "Terraform CI Quality & Security Checks"
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  format-and-validate:
+    name: "Lint, Validate & Security Scans"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.0"
+
+      - name: "Terraform Format Check"
+        run: terraform fmt -check -recursive
+
+      - name: "Validate Bootstrap Configuration"
+        run: |
+          cd bootstrap
+          terraform init -backend=false
+          terraform validate
+
+      - name: "Validate Infra Root & Modules Configuration"
+        run: |
+          cd infra
+          terraform init -backend=false
+          terraform validate
+
+      - name: "Setup TFLint"
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: "v0.55.0"
+
+      - name: "Initialize & Run TFLint"
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: "Run Trivy IaC Security Scan"
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: "config"
+          scan-ref: "."
+          severity: "HIGH,CRITICAL"
+          exit-code: "0"
+
+      - name: "Run Gitleaks Credential Scan"
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
